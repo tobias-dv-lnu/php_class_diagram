@@ -6,16 +6,17 @@ require_once("model/Folder.php");
 require_once("model/ProjectParser.php");
 
 class ClassDiagram {
-	public function __construct(\model\Folder $source, $className) {
+	public function __construct(\model\Folder $source) {
 		
 
 		$parser = new \model\ProjectParser($source);
 		
 		$classes = $parser->getClasses();
+
+		$classes[] = new \model\ClassNode("", "\\HTML", array());
 		
 		
-		
-		$includedClasses = $this->getIncludedClasses($classes, $className);
+		$includedClasses = $this->getIncludedClasses($classes);
 		$relations = $this->getRelations($classes, $includedClasses);
 
 		echo $this->getImageLink($includedClasses, $relations);
@@ -31,6 +32,9 @@ class ClassDiagram {
 
 		$first = true;
 
+		//we need a check for solitary classes
+		$encodedClassNames = array();
+
 		foreach($relations as $relation) {
 			//var_dump($relation);
 			$fromFN = $relation[0]->getFullName();
@@ -38,6 +42,8 @@ class ClassDiagram {
 
 			$from = $this->yumlClassName($fromFN, "");
 			$to = $this->yumlClassName($toFN , "");
+			$encodedClassNames[$fromFN] = true;
+			$encodedClassNames[$toFN] = true;
 
 			if ($first) {
 				$first = false;
@@ -45,8 +51,20 @@ class ClassDiagram {
 				$string .= ",";
 			}
 			$string .= urlencode("[$from]->[$to]");
+		}
 
-			
+		// add solitary classes last
+		foreach ($includedClasses as $className) {
+			if (!isset($encodedClassNames[$className])) {
+
+			if ($first) {
+				$first = false;
+			} else {
+				$string .= ",";
+			}
+
+				$string .= urlencode("[" . $this->yumlClassName($className, "") . "]");
+			}
 		}
 
 		return "<img src='$string'/>";
@@ -74,32 +92,27 @@ class ClassDiagram {
 	}
 
 
-	private function getIncludedClasses($classes, $className) {
-		$includedClasses = array($className => $className);
-
+	private function getIncludedClasses($classes) {
 		
+
+
 		foreach($classes as $class) {
-			$left = strcmp($class->getFullName(), $className)==0;
 			
-
-			foreach($class->fanout as $other) {
-				$otherClass = $this->findClass($classes, $other, $class->namespace);
-
-				
-				$right = strcmp($otherClass->getFullName(), $className) == 0;
-				
-				if ($left || $right) {
-					$includedClasses[$otherClass->getFullName()] = $otherClass->getFullName();
-					$includedClasses[$class->getFullName()] = $class->getFullName();
-				}
-			}
+			$includedClasses[$class->getFullName()] = $class->getFullName();
 		}
+
+
+
 		return $includedClasses;
 	}
 	
 	private function findClass($classes, $class, $localNamespace)  {
+
+//var_dump($class);
+
 		$lastPos = strpos($class, "\\");
 		if ($lastPos !== FALSE) {
+			// for the HTML special type
 			return new \model\ClassNode("", $class, array());
 		}
 		
