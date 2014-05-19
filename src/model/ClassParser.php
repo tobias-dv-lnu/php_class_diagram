@@ -34,9 +34,10 @@ class ClassParser {
 		}
 
 		
-		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) >1 ) {
+		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) > 1 ) {
 				$ret["\HTML"] = "\HTML";
 		}
+		//var_dump($this->code);
 		
 		
 		$nodes = $this->findNodes("PHPParser_Node_Name", 
