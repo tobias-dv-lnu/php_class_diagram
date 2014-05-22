@@ -2,16 +2,12 @@
 
 namespace view;
 
-require_once("model/Folder.php");
-require_once("model/ProjectParser.php");
+require_once("model/Project.php");
 
 class ClassDiagram {
-	public function __construct(\model\Folder $source) {
-		
-		$parser = new \model\ProjectParser($source);
-		$classes = $parser->getClasses();
+	public function __construct(\model\Project $a_project) {
 
-		echo $this->getImageLinkYUML($classes);
+		echo $this->getImageLinkYUML($a_project->getClasses());
 	}
 
 	private function getImageLinkYUML(array $a_classes) {

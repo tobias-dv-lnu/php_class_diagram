@@ -30,26 +30,29 @@ class ProjectParser {
 					$namespace = $classParser->getNamespace();
 					
 					$classes = $classParser->getClasses();
-					$fanout = $classParser->getDependencies();
+
+					
 
 
+					foreach($classes as $class) {
 
-					$fanoutClasses = array();
-					foreach ($fanout as $typeName) {
-						$fanOutClass = $this->FindClass($typeName);
-						if ($fanOutClass == NULL) {
-							$ns = $classParser->getNamespaceName($typeName);
-							$name = $classParser->getClassName($typeName);
-							$fanOutClass = new ClassNode($ns, $name, array());
+						$fanout = $classParser->getDependencies($class);
+						$fanoutClasses = array();
+						foreach ($fanout as $typeName) {
+							$fanOutClass = $this->FindClass($typeName);
+							if ($fanOutClass == NULL) {
+								$ns = $classParser->getNamespaceName($typeName);
+								$name = $classParser->getClassName($typeName);
+								$fanOutClass = new ClassNode($ns, $name, array());
 
-							$this->m_classes[] = $fanOutClass;
+								$this->m_classes[] = $fanOutClass;
+							}
+							$fanoutClasses[] = $fanOutClass;
 						}
-						$fanoutClasses[] = $fanOutClass;
-					}
 
 
 					
-					foreach($classes as $class) {
+					
 						$typeName = $classParser->getTypeNameFromParts(array($namespace, $class));
 						$newClass = $this->FindClass($typeName);
 						if ($newClass == NULL) {

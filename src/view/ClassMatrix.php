@@ -6,14 +6,10 @@ require_once("model/Folder.php");
 require_once("model/ProjectParser.php");
 
 class ClassMatrix {
-	public function __construct(\model\Folder $source) {
+	public function __construct(\model\Project $a_project) {
 		
-
-		$parser = new \model\ProjectParser($source);
 		
-		$classes = $parser->getClasses();
-
-		//$classes[] = new \model\ClassNode("", "\\HTML", array());
+		$classes = $a_project->getClasses();
 		
 		echo "<table border='1'>";
 		echo "<tr><td>DSM</td>";

@@ -12,6 +12,10 @@ class ThisIsAController {
 	}
 }
 
+class ThisIsAnotherControllerInSameFile {
+	
+}
+
 $c = new ThisIsAController();
 $c->DoScenario();
 ?>

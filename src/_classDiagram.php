@@ -1,8 +1,15 @@
 <?php
 
 require_once("model/Folder.php");
+require_once("model/Project.php");
 require_once("view/ClassDiagram.php");
 require_once("view/ClassMatrix.php");
 
-new \view\ClassDiagram(new \model\Folder($_GET["basepath"]));
-new \view\ClassMatrix(new \model\Folder($_GET["basepath"]));
+$source = new \model\Folder($_GET["basepath"]);
+$parser = new \model\ProjectParser($source);
+$classes = $parser->getClasses();
+
+$p = new \model\Project($source, $classes);
+
+new \view\ClassDiagram($p);
+new \view\ClassMatrix($p);

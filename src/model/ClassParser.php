@@ -15,35 +15,35 @@ class ClassParser {
 
 		try {
 			  $this->statements = $parser->parse($code);
+			  //var_dump($this->statements);
 		} catch (\PHPParser_Error $e) {
 			throw new \Exception('Parse Error: '. $e->getMessage());
 		}
 	}
 	
 	
-	public function getDependencies() {
+	public function getDependencies($a_className) {
 		$ret = array();
 		//print_r($this->statements);
 		
 		$globalArrays = array("_SESSION", "_GET", "_POST");
 
+		// should not use all the code in the file
 		foreach ($globalArrays as $value) {
 			if (strpos($this->code, $value) !== FALSE) {
 				$ret[$value] = $value;
 			}
 		}
-
 		
+		// should not use all the code in the file
 		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) > 1 ) {
 				$ret["HTML"] = "HTML";
 		}
-		//var_dump($this->code);
 		
+		$statements = $this->getStatementsInClass($a_className, $this->statements);
 		
-		$nodes = $this->findNodes("PHPParser_Node_Name", 
-								  $this->statements);
-		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", 
-								  $this->statements);
+		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);
+		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements);
 		
 		$nodes = array_merge($nodes, $nodesFull);
 		
@@ -58,12 +58,14 @@ class ClassParser {
 		//var_dump($nodes);
 		
 		foreach ($nodes as $type) {
-			$type = ($this->getTypeNameFromParts($type->parts));
+
+			$typeName = ($this->getTypeNameFromParts($type->parts));
 			
 			$isType = true;
 			
-			if (isset($notTypes[$type]) == false) {
-				$ret[$type] = $type;
+			if (isset($notTypes[$typeName]) == false) {
+				//var_dump($type);
+				$ret[$typeName] = $typeName;
 			}
 		}
 		
@@ -115,12 +117,16 @@ class ClassParser {
 		//	print_r($this->statements);
 		
 		
-		$classNodes = $this->findNodes("PHPParser_Node_Stmt_Class", 
-									   $this->statements);
+		$classNodes = $this->findNodes("PHPParser_Node_Stmt_Class", $this->statements);
 		
 		foreach ($classNodes as $node) {
 			$ret[] = $node->name;
 		}
+
+		if (count($ret) == 2) {
+			$this->getStatementsInClass("ThisIsAContoller", $this->statements);
+		}
+
 		return $ret;
 	}
 	
@@ -150,6 +156,18 @@ class ClassParser {
 			return $parts[0];
 		}
 		return "";
+	}
+
+	private function getStatementsInClass($a_className, array $a_statements) {
+		$classes = $this->findNodes("PHPParser_Node_Stmt_Class", $a_statements);
+		$ret = array();
+		foreach ($classes as $class) {
+			if ($class->name == $a_className) {
+				$ret[] = $class;
+			}
+		}
+
+		return $ret;
 	}
 	
 	/**
