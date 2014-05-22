@@ -8,53 +8,40 @@ require_once("model/ProjectParser.php");
 class ClassDiagram {
 	public function __construct(\model\Folder $source) {
 		
-
 		$parser = new \model\ProjectParser($source);
-		
 		$classes = $parser->getClasses();
 
-		$classes[] = new \model\ClassNode("", "\\HTML", array());
-		
-		
-		$includedClasses = $this->getIncludedClasses($classes);
-		$relations = $this->getRelations($classes, $includedClasses);
-
-		echo $this->getImageLink($includedClasses, $relations);
-
-		
-		
+		echo $this->getImageLinkYUML($classes);
 	}
 
-
-
-	private function getImageLink($includedClasses, $relations) {
+	private function getImageLinkYUML(array $a_classes) {
 		$string = "http://yuml.me/diagram/plain;dir:LR;scale:80;/class/";
 
-		$first = true;
-
-		//we need a check for solitary classes
 		$encodedClassNames = array();
 
-		foreach($relations as $relation) {
-			//var_dump($relation);
-			$fromFN = $relation[0]->getFullName();
-			$toFN = $relation[1];
+		$first = true;
+		foreach($a_classes as $fromClass) {
+			foreach ($fromClass->fanout as $toClass) {
+				$fromFN = $fromClass->getFullName();
+				$toFN = $toClass->getFullName();	
 
-			$from = $this->yumlClassName($fromFN, "");
-			$to = $this->yumlClassName($toFN , "");
-			$encodedClassNames[$fromFN] = true;
-			$encodedClassNames[$toFN] = true;
+				$from = $this->yumlClassName($fromFN, "");
+				$to = $this->yumlClassName($toFN , "");
+				$encodedClassNames[$fromFN] = true;
+				$encodedClassNames[$toFN] = true;
 
-			if ($first) {
-				$first = false;
-			} else {
-				$string .= ",";
+				if ($first) {
+					$first = false;
+				} else {
+					$string .= ",";
+				}
+				$string .= urlencode("[$from]->[$to]");
 			}
-			$string .= urlencode("[$from]->[$to]");
 		}
 
 		// add solitary classes last
-		foreach ($includedClasses as $className) {
+		foreach ($a_classes as $class) {
+			$className = $class->getFullName();
 			if (!isset($encodedClassNames[$className])) {
 
 			if ($first) {
@@ -70,65 +57,9 @@ class ClassDiagram {
 		return "<img src='$string'/>";
 	}
 
-	private function getRelations($classes, $includedClasses) {
-		$ret = array();
-		foreach($classes as $class) {
-
-			$isIncluded = isset($includedClasses["$class->namespace\\$class->className"]);
-			$isIncluded |=isset($includedClasses[$class->className]);
-
-			if ($isIncluded) {
-				foreach($class->fanout as $other) {
-					$otherClass= $this->findClass($classes, $other, $class->namespace);
-					
-					if(isset($includedClasses[$otherClass->getFullName()])) {
-						$ret[] = array($class, $otherClass->getFullName());
-					}
-				}
-			}
-			
-		}
-		return $ret;
-	}
 
 
-	private function getIncludedClasses($classes) {
-		
-
-
-		foreach($classes as $class) {
-			
-			$includedClasses[$class->getFullName()] = $class->getFullName();
-		}
-
-
-
-		return $includedClasses;
-	}
 	
-	private function findClass($classes, $class, $localNamespace)  {
-
-//var_dump($class);
-
-		$lastPos = strpos($class, "\\");
-		if ($lastPos !== FALSE) {
-			// for the HTML special type
-			return new \model\ClassNode("", $class, array());
-		}
-		
-		//find in same namespace
-		for ($i = 0; $i < count($classes); $i++) {
-			$maybe = $classes[$i];
-			
-			if ($localNamespace == $maybe->namespace) {
-				if ($class == $maybe->className) {
-					return $maybe;
-				}
-			}
-		}
-		
-		return new \model\ClassNode("", $class, array());
-	}
 	
 	private function yumlClassName($className, $namespace) {
 		

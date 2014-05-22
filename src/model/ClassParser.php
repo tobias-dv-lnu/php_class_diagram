@@ -35,7 +35,7 @@ class ClassParser {
 
 		
 		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) > 1 ) {
-				$ret["\HTML"] = "\HTML";
+				$ret["HTML"] = "HTML";
 		}
 		//var_dump($this->code);
 		
@@ -55,9 +55,7 @@ class ClassParser {
 			$notTypes[$notAType] = $notAType;
 		}
 		
-		//print_r($notTypes);
-		
-		
+		//var_dump($nodes);
 		
 		foreach ($nodes as $type) {
 			$type = ($this->getTypeNameFromParts($type->parts));
@@ -130,7 +128,7 @@ class ClassParser {
 	* @param array $parts
 	* @return String
 	*/
-	private function getTypeNameFromParts($parts) {
+	public function getTypeNameFromParts($parts) {
 		$ret = "";
 		foreach($parts as $part) {
 			if (strlen($ret) > 0 ) {
@@ -139,6 +137,19 @@ class ClassParser {
 			$ret .= "$part";
 		}
 		return $ret;
+	}
+
+	static public function getClassName($a_typeName) {
+		$parts = explode("\\", $a_typeName);
+		return $parts[count($parts) - 1];
+	}
+
+	static public function getNamespaceName($a_typeName) {
+		$parts = explode("\\", $a_typeName);
+		if (count($parts) > 1) {
+			return $parts[0];
+		}
+		return "";
 	}
 	
 	/**

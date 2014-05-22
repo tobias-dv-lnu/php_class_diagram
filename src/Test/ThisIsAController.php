@@ -8,6 +8,10 @@ class ThisIsAController {
 		$m = new ThisIsAModel();
 		$v = new ThisIsAView();
 		$v->Render($m);
+		$v->RenderAnotherTing();
 	}
 }
+
+$c = new ThisIsAController();
+$c->DoScenario();
 ?>

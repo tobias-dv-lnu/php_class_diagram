@@ -11,15 +11,14 @@ require_once("ClassNode.php");
 
 class ProjectParser {
 	
+	private $m_classes;
 	
 	public function __construct(Folder $path) {
-		$this->path = $path;	
+		$this->path = $path;
+		$this->m_classes = array();	
 	}
 	
 	public function getClasses() {
-		$ret = array();
-		
-		
 		
 		$files = $this->path->getFiles();
 		
@@ -32,9 +31,33 @@ class ProjectParser {
 					
 					$classes = $classParser->getClasses();
 					$fanout = $classParser->getDependencies();
+
+
+
+					$fanoutClasses = array();
+					foreach ($fanout as $typeName) {
+						$fanOutClass = $this->FindClass($typeName);
+						if ($fanOutClass == NULL) {
+							$ns = $classParser->getNamespaceName($typeName);
+							$name = $classParser->getClassName($typeName);
+							$fanOutClass = new ClassNode($ns, $name, array());
+
+							$this->m_classes[] = $fanOutClass;
+						}
+						$fanoutClasses[] = $fanOutClass;
+					}
+
+
 					
 					foreach($classes as $class) {
-						$ret[] = new ClassNode($namespace, $class, $fanout);
+						$typeName = $classParser->getTypeNameFromParts(array($namespace, $class));
+						$newClass = $this->FindClass($typeName);
+						if ($newClass == NULL) {
+							$newClass = new ClassNode($namespace, $class, $fanoutClasses);
+							$this->m_classes[] = $newClass;
+						} else {
+							$newClass->fanout = $fanoutClasses;
+						}
 					}
 				}catch(\Exception $e) {
 				}
@@ -43,10 +66,21 @@ class ProjectParser {
 			if ($file->isDirectory()) {
 				$pp = new ProjectParser($file);
 				
-				$ret = array_merge($ret, $pp->getClasses());
-				
+				$pp->getClasses();
+				$this->m_classes = array_merge($this->m_classes, $pp->m_classes);
 			}
 		}
-		return $ret;
+
+		return $this->m_classes;
+	}
+
+	private function FindClass($typeName) {
+		foreach ($this->m_classes as $classNode) {
+			if (strcmp($classNode->getFullName(), $typeName) == 0) {
+			
+				return $classNode;
+			}
+		}
+		return NULL;
 	}
 }
