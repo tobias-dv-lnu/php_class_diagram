@@ -15,6 +15,16 @@ class Project {
 	public function getClasses() {
 		return $this->m_classNodes;
 	}
+
+	public function getClass($a_namespace, $a_className) {
+		foreach ($this->m_classNodes as $classNode) {
+			if ($classNode->namespace == $a_namespace && $classNode->className == $a_className) {
+				return $classNode;
+			}
+		}
+
+		return NULL;
+	}
 }
 
 ?>

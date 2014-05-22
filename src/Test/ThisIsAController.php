@@ -13,9 +13,17 @@ class ThisIsAController {
 }
 
 class ThisIsAnotherControllerInSameFile {
-	
+	public function DoScenario() {
+		
+		$a = $_SESSION['a'];
+		$a = $_POST['a'];
+		$a = $_GET['a'];
+		$a = $_REQUEST['a'];
+
+	}
 }
 
+echo "<h1>Hello World</h1>";
 $c = new ThisIsAController();
 $c->DoScenario();
 ?>

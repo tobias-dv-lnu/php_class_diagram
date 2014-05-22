@@ -20,34 +20,16 @@ class ClassMatrix {
 	
 
 		foreach ($classes as $classFrom) {
-			echo "<tr><td>" . $classFrom->namespace . "-" . $classFrom->className ." </td>";
-			foreach ($classes as $classTo) {
-				echo "<td>" . $classFrom->DepthOfIsUsing($classTo) . "</td>";
+			if ($classFrom->namespace != "uiapi") {
+				echo "<tr><td>" . $classFrom->namespace . "-" . $classFrom->className ." </td>";
+				foreach ($classes as $classTo) {
+					echo "<td>" . $classFrom->DepthOfIsUsingClassNode($classTo) . "</td>";
+				}
+				echo "</tr>";
 			}
-			echo "</tr>";
 		}
 
 		echo "</table>";
-	}
-
-	private function DepthOfIsUsing(\model\ClassNode $a_from, \model\ClassNode $a_to) {
-		if ($a_from == $a_to) {
-			return "";
-		}
-
-		// direct dependencies
-		foreach ($a_from->fanout as $name) {
-			if ($a_to->className == $name) {
-				return 1;
-			}
-		}
-
-		// search decendants
-		foreach ($a_from->fanout as $name) {
-
-		}
-
-		return 0;
 	}
 }
 

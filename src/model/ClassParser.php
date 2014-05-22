@@ -15,7 +15,7 @@ class ClassParser {
 
 		try {
 			  $this->statements = $parser->parse($code);
-			  //var_dump($this->statements);
+			 // var_dump($this->statements);
 		} catch (\PHPParser_Error $e) {
 			throw new \Exception('Parse Error: '. $e->getMessage());
 		}
@@ -24,23 +24,34 @@ class ClassParser {
 	
 	public function getDependencies($a_className) {
 		$ret = array();
-		//print_r($this->statements);
 		
-		$globalArrays = array("_SESSION", "_GET", "_POST");
 
+		$statements = $this->getStatementsInClass($a_className, $this->statements);
+		
 		// should not use all the code in the file
-		foreach ($globalArrays as $value) {
-			if (strpos($this->code, $value) !== FALSE) {
-				$ret[$value] = $value;
+		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_String", $statements);
+		
+		foreach ($stringStatements as $stringStatement) {
+			// this is not perfect and will catch opening "<"
+			if (strlen($stringStatement->value) != strlen(strip_tags($stringStatement->value))) {
+				$ret["HTML"] = "uiapi\\HTML";
+				break;
 			}
 		}
-		
-		// should not use all the code in the file
-		if (preg_match_all('@<[\/\!]*?[^<>]*?>@si', $this->code, $array) > 1 ) {
-				$ret["HTML"] = "HTML";
-		}
-		
-		$statements = $this->getStatementsInClass($a_className, $this->statements);
+
+		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
+		$globalArrays = array("_SESSION", "_GET", "_POST", "_REQUEST");
+
+		foreach ($variableStatements as $variable) {
+			foreach ($globalArrays as $key => $value) {
+				if (strpos($variable->name, $value) !== FALSE) {
+					$value = "uiapi\\" . $value;
+					$ret[$value] = $value;
+					unset($globalArrays[$key]);
+					break;
+				}
+			}
+		}	
 		
 		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);
 		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements);
