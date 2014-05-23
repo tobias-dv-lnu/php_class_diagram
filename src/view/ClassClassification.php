@@ -11,22 +11,45 @@ class ClassClassification {
 		$classes = $a_project->getClasses();
 		
 		echo "<table border='1'>";
-		echo "<tr><td>Class</td><td>Classification</td></tr>";
+		echo "<tr><th>Class</th><th>Rule Classification</th><th>Developer Classification</th></tr>";
 		foreach ($classes as $class) {
 
 			if (isset($class->fileName)) {
-				echo "<tr><td>" . $class->namespace . "-" . $class->className."</td><td>";
+				$row = "<td>" . $class->namespace . "-" . $class->className."</td><td>";
 				$depth = $class->DepthOfIsUsingNamespace("uiapi");
+				$rc = "model";
 				if ($depth <= 0) {
-					echo "model ";
+					$row .= "model ";
 				} else if ($depth > 1) {
-					echo "controller ";
+					$row .= "controller ";
+					$rc = "controller";
 				} else if ($depth == 1) {
-					echo "view ";
+					$row .= "view ";
+					$rc = "view";
 				}
-				echo $depth;
 
-				echo "</td></tr>";
+				$row .= "</td><td>";
+				$typeName = strtoupper($class->getFullName());
+				$dc = "view";
+				if (strstr($typeName, "VIEW")) {
+					$row .= "view";
+				} else if (strstr($typeName, "MODEL")) {
+					$row .= "model";
+					$dc = "model";
+				} else {
+					$row .= "controller";
+					$dc = "controller";
+				}
+				$row .="</td>";
+
+				if ($rc == $dc) {
+					echo "<tr bgcolor='lightgreen'>";
+				} else {
+					echo "<tr bgcolor='red'>";
+				}
+				
+				echo $row;
+				echo "</tr>";
 			}
 
 		}

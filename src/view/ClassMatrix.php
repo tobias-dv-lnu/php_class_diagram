@@ -12,9 +12,9 @@ class ClassMatrix {
 		$classes = $a_project->getClasses();
 		
 		echo "<table border='1'>";
-		echo "<tr><td>DSM</td>";
+		echo "<tr><th>DSM</th>";
 		foreach ($classes as $class) {
-			echo "<td>" . $class->namespace . "-" . $class->className."</td>";
+			echo "<th>" . $class->namespace . "-" . $class->className."</th>";
 		}
 		echo "</tr>";
 	

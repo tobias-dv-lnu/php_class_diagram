@@ -33,7 +33,7 @@ class ClassParser {
 		}
 
 		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
-		$globalArrays = array("_SESSION", "_GET", "_POST", "_REQUEST");
+		$globalArrays = array("_GET", "_POST", "_REQUEST");
 
 		foreach ($variableStatements as $variable) {
 			foreach ($globalArrays as $key => $value) {
@@ -58,11 +58,6 @@ class ClassParser {
 			$typeName = $this->getTypeNameFromParts($node->parts);
 			$ret[$typeName] = $typeName;
 		}
-
-		//var_dump($typeNames);
-
-		//var_dump($nodesFull);
-		//var_dump($nodes);
 		
 		$nodes = array_merge($nodes, $nodesFull);
 		
