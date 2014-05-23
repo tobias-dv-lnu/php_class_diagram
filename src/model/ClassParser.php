@@ -28,32 +28,8 @@ class ClassParser {
 
 		$statements = $this->getStatementsInClass($a_className, $this->statements);
 		
-		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_String", $statements);	
-		foreach ($stringStatements as $stringStatement) {
-			// this is not perfect and will catch opening "<"
-			if (strlen($stringStatement->value) != strlen(strip_tags($stringStatement->value))) {
-				$ret["HTML"] = "uiapi\\HTML";
-				break;
-			}
-		}
-
-		// this is for checking encapsed scalar strings like "<img src='$string'/>"
-		if (!isset($ret["HTML"])) {
-			$stringStatements = $this->findNodes("PHPParser_Node_Scalar_Encapsed", $statements);	
-			foreach ($stringStatements as $stringStatement) {
-				foreach ($stringStatement->parts as $part) {
-					if (is_string($part)) {
-						// this is not perfect and will catch opening "<"
-						if (strlen($part) != strlen(strip_tags($part))) {
-							$ret["HTML"] = "uiapi\\HTML";
-							break;
-						}					
-					}
-				}
-				if (isset($ret["HTML"])) {
-					break;
-				}
-			}
+		if ($this->dependsOnHTML($statements)) {
+			$ret["HTML"] = "uiapi\\HTML";
 		}
 
 		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
@@ -111,6 +87,35 @@ class ClassParser {
 		}
 
 		return $ret;
+	}
+
+	private function containsHTML($a_string) {
+		// this is not perfect and will catch opening "<"
+		return strlen($a_string) != strlen(strip_tags($a_string));
+	}
+
+	private function dependsOnHTML(array $a_statements) {
+		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_String", $a_statements);	
+		foreach ($stringStatements as $stringStatement) {
+			
+			if ($this->containsHTML($stringStatement->value)) {
+				return true;
+			}
+		}
+
+		// this is for checking encapsed scalar strings like "<img src='$string'/>"
+		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_Encapsed", $a_statements);	
+		foreach ($stringStatements as $stringStatement) {
+			foreach ($stringStatement->parts as $part) {
+				if (is_string($part)) {
+					if ($this->containsHTML($part)) {
+						return true;
+					}					
+				}
+			}
+		}
+
+		return false;
 	}
 	
 	private function getCalledFunctions() {

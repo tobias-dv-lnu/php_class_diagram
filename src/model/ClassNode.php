@@ -46,6 +46,7 @@ class ClassNode {
 	}
 
 	public function DepthOfIsUsingNamespace($a_namespace) {
+
 		return $this->DepthOfIsUsing(new FindNamespaceStrategy($a_namespace));
 	}
 
@@ -77,6 +78,7 @@ class ClassNode {
 			foreach ($a_closedList as $checkedNode) {
 				if ($checkedNode == $classNode) {
 					$classNode = NULL;
+					break;
 				}
 			}
 

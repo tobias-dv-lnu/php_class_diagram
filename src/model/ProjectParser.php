@@ -31,10 +31,10 @@ class ProjectParser {
 					
 					$classes = $classParser->getClasses();
 
-					
-
-
 					foreach($classes as $class) {
+
+						// possibly we should check if a class is already parsed
+						// this could avoid duplicate class declarations
 
 						$fanout = $classParser->getDependencies($class);
 						$fanoutClasses = array();
