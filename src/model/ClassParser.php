@@ -28,14 +28,31 @@ class ClassParser {
 
 		$statements = $this->getStatementsInClass($a_className, $this->statements);
 		
-		// should not use all the code in the file
-		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_String", $statements);
-		
+		$stringStatements = $this->findNodes("PHPParser_Node_Scalar_String", $statements);	
 		foreach ($stringStatements as $stringStatement) {
 			// this is not perfect and will catch opening "<"
 			if (strlen($stringStatement->value) != strlen(strip_tags($stringStatement->value))) {
 				$ret["HTML"] = "uiapi\\HTML";
 				break;
+			}
+		}
+
+		// this is for checking encapsed scalar strings like "<img src='$string'/>"
+		if (!isset($ret["HTML"])) {
+			$stringStatements = $this->findNodes("PHPParser_Node_Scalar_Encapsed", $statements);	
+			foreach ($stringStatements as $stringStatement) {
+				foreach ($stringStatement->parts as $part) {
+					if (is_string($part)) {
+						// this is not perfect and will catch opening "<"
+						if (strlen($part) != strlen(strip_tags($part))) {
+							$ret["HTML"] = "uiapi\\HTML";
+							break;
+						}					
+					}
+				}
+				if (isset($ret["HTML"])) {
+					break;
+				}
 			}
 		}
 
@@ -53,34 +70,46 @@ class ClassParser {
 			}
 		}	
 		
-		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);
-		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements);
+		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);	// node names relative to namespace
+		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements); // absolute node names
+		
+		$namespace = $this->getNamespace();
+		foreach($nodes as $node) {
+			$typeName = $node->parts[0] = $namespace . "\\" . $node->parts[0];
+			$ret[$typeName] = $typeName;
+		}
+		foreach ($nodesFull as $node) {
+			$typeName = $this->getTypeNameFromParts($node->parts);
+			$ret[$typeName] = $typeName;
+		}
+
+		//var_dump($typeNames);
+
+		//var_dump($nodesFull);
+		//var_dump($nodes);
 		
 		$nodes = array_merge($nodes, $nodesFull);
 		
-		$notTypes = $this->getCalledFunctions();
-		$notTypes[] = $this->getNamespace();
-		$notTypes = array_merge($notTypes, self::$phpKeyWords);
-		$notTypes = array_merge($notTypes, get_defined_constants());
-		foreach($notTypes as $notAType) {
-			$notTypes[$notAType] = $notAType;
-		}
-		
-		//var_dump($nodes);
-		
-		foreach ($nodes as $type) {
+		$notTypes = $this->getCalledFunctions();	// for some reason these have the namespace
 
-			$typeName = ($this->getTypeNameFromParts($type->parts));
+		$notTypes[] = $namespace;
+		$notTypesNoNS = array();
+		$notTypesNoNS = array_merge($notTypesNoNS, self::$phpKeyWords);
+		$notTypesNoNS = array_merge($notTypesNoNS, get_defined_constants());
+		foreach ($notTypesNoNS as $typeNoNS) {
+			$typeName = $namespace . "\\" . $typeNoNS;
+			$notTypes[] = $typeName;
+		}
+
+		$notTypes = array_merge($notTypes, $this->getCalledFunctions());
+
+		foreach($notTypes as $notAType) {
 			
-			$isType = true;
-			
-			if (isset($notTypes[$typeName]) == false) {
-				//var_dump($type);
-				$ret[$typeName] = $typeName;
+			if (isset($ret[$notAType])) {
+				unset($ret[$notAType]);
 			}
 		}
-		
-		
+
 		return $ret;
 	}
 	

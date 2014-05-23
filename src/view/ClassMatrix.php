@@ -20,7 +20,7 @@ class ClassMatrix {
 	
 
 		foreach ($classes as $classFrom) {
-			if ($classFrom->namespace != "uiapi") {
+			if (isset($classFrom->fileName)) {
 				echo "<tr><td>" . $classFrom->namespace . "-" . $classFrom->className ." </td>";
 				foreach ($classes as $classTo) {
 					echo "<td>" . $classFrom->DepthOfIsUsingClassNode($classTo) . "</td>";

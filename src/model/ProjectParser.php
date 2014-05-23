@@ -49,9 +49,6 @@ class ProjectParser {
 							}
 							$fanoutClasses[] = $fanOutClass;
 						}
-
-
-					
 					
 						$typeName = $classParser->getTypeNameFromParts(array($namespace, $class));
 						$newClass = $this->FindClass($typeName);
@@ -61,6 +58,7 @@ class ProjectParser {
 						} else {
 							$newClass->fanout = $fanoutClasses;
 						}
+						$newClass->fileName = $file->getFullName();
 					}
 				}catch(\Exception $e) {
 				}

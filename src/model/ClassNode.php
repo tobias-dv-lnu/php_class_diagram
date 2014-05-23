@@ -108,11 +108,11 @@ class ClassNode {
 				$sameNamespace = (strcmp($class->namespace, $this->namespace) == 0);
 				$sameName = (strcmp($other, $this->className) == 0);
 				if ($sameNamespace && $sameName) {
-					echo "found $other as $inThisClassNameSpace in $class->className $this->className<br/>";
+			//		echo "found $other as $inThisClassNameSpace in $class->className $this->className<br/>";
 					return $inThisClassNameSpace;
 				}
 			}
-			echo "not found $other as $inThisClassNameSpace<br/>";
+			//echo "not found $other as $inThisClassNameSpace<br/>";
 			return $other;
 		}
 		else

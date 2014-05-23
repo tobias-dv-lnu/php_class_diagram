@@ -14,7 +14,7 @@ class ClassClassification {
 		echo "<tr><td>Class</td><td>Classification</td></tr>";
 		foreach ($classes as $class) {
 
-			if ($class->namespace != "uiapi") {
+			if (isset($class->fileName)) {
 				echo "<tr><td>" . $class->namespace . "-" . $class->className."</td><td>";
 				$depth = $class->DepthOfIsUsingNamespace("uiapi");
 				if ($depth <= 0) {
