@@ -33,7 +33,7 @@ class ClassParser {
 		}
 
 		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
-		$globalArrays = array("_GET", "_POST", "_REQUEST");
+		$globalArrays = array("_GET", "_POST", "_REQUEST", "_FILES", "_REQUEST");
 
 		foreach ($variableStatements as $variable) {
 			foreach ($globalArrays as $key => $value) {
@@ -49,11 +49,21 @@ class ClassParser {
 		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);	// node names relative to namespace
 		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements); // absolute node names
 		
+		//we also need a list of use statements to compare classes.
+		$useAliases = $this->getUseAliases();
+
+	
+
 		$namespace = $this->getNamespace();
 		foreach($nodes as $node) {
-			$typeName = $node->parts[0] = $namespace . "\\" . $node->parts[0];
-			$ret[$typeName] = $typeName;
+			$typeName = $namespace . "\\" . $node->parts[0];
+			if (isset($useAliases[$node->parts[0]])) {
+				$typeName = $useAliases[$node->parts[0]];
+			}
+			
+			$ret[$typeName] = $typeName;				
 		}
+
 		foreach ($nodesFull as $node) {
 			$typeName = $this->getTypeNameFromParts($node->parts);
 			$ret[$typeName] = $typeName;
@@ -80,6 +90,8 @@ class ClassParser {
 				unset($ret[$notAType]);
 			}
 		}
+
+		
 
 		return $ret;
 	}
@@ -149,6 +161,19 @@ class ClassParser {
 		} else {
 			return "";
 		}
+	}
+
+	public function getUseAliases() {
+		$nodes = $this->findNodes("PHPParser_Node_Stmt_UseUse", $this->statements);
+		$aliases = array();
+
+		foreach ($nodes as $node) {
+			$name = $this->getTypeNameFromParts($node->name->parts);
+			$alias = $node->alias;
+			$aliases[$alias] = $name;
+		}
+
+		return $aliases;
 	}
 	
 	public function getClasses() {

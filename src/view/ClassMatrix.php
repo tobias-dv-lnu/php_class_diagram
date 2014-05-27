@@ -23,7 +23,11 @@ class ClassMatrix {
 			if (isset($classFrom->fileName)) {
 				echo "<tr><td>" . $classFrom->namespace . "-" . $classFrom->className ." </td>";
 				foreach ($classes as $classTo) {
-					echo "<td>" . $classFrom->DepthOfIsUsingClassNode($classTo) . "</td>";
+					$depth = $classFrom->DepthOfIsUsingClassNode($classTo);
+					if ($depth < 0) {
+						$depth = " ";
+					}
+					echo "<td>" . $depth . "</td>";
 				}
 				echo "</tr>";
 			}
