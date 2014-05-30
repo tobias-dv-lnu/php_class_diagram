@@ -27,73 +27,137 @@ class ClassParser {
 		
 
 		$statements = $this->getStatementsInClass($a_className, $this->statements);
+		if (count($statements) != 1) {
+			return $ret;
+		}
+
+		//var_dump($statements);
 		
 		if ($this->dependsOnHTML($statements)) {
-			$ret["HTML"] = "uiapi\\HTML";
+			$ret["uiapi\\HTML"] = "uiapi\\HTML";
 		}
 
 		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
-		$globalArrays = array("_GET", "_POST", "_REQUEST", "_FILES", "_REQUEST");
+		$viewArrays = array("_GET", "_POST", "_REQUEST", "_FILES");
 
 		foreach ($variableStatements as $variable) {
-			foreach ($globalArrays as $key => $value) {
+			foreach ($viewArrays as $key => $value) {
 				if (strpos($variable->name, $value) !== FALSE) {
 					$value = "uiapi\\" . $value;
 					$ret[$value] = $value;
-					unset($globalArrays[$key]);
+					unset($viewArrays[$key]);
 					break;
 				}
 			}
-		}	
-		
-		$nodes = $this->findNodes("PHPParser_Node_Name", $statements);	// node names relative to namespace
-		$nodesFull = $this->findNodes("PHPParser_Node_Name_FullyQualified", $statements); // absolute node names
-		
-		//we also need a list of use statements to compare classes.
+		}
+
+		$functionStatements = $this->findNodes("PHPParser_Node_Expr_FuncCall", $statements);
+		$viewFunctions = array("header", "get_headers", "parse_url", "urldecode", "urlencode", "rawurldecode", "rawurlencode", "http_build_query");
+		foreach ($functionStatements as $function) {
+			foreach ($viewFunctions as $key => $value) {
+				if (strpos($function->name, $value) !== FALSE) {
+					$value = "uiapi\\" . $value;
+					$ret[$value] = $value;
+					unset($viewFunctions[$key]);
+					break;
+				}
+			}
+		}		
+	
 		$useAliases = $this->getUseAliases();
 
-	
+		$newStatements = $this->findNodes("PHPParser_Node_Expr_New", $statements);
+		$methodStatements = $this->findNodes("PHPParser_Node_Stmt_ClassMethod", $statements);
+		$namespace = rtrim($this->getNamespace(), "\\");
+		$extends = $statements[0]->extends;
+		$implements = $statements[0]->implements;
+		$staticCalls = $this->findNodes("PHPParser_Node_Expr_StaticCall", $statements);
 
-		$namespace = $this->getNamespace();
-		foreach($nodes as $node) {
-			$typeName = $namespace . "\\" . $node->parts[0];
-			if (isset($useAliases[$node->parts[0]])) {
-				$typeName = $useAliases[$node->parts[0]];
-			}
-			
-			$ret[$typeName] = $typeName;				
-		}
-
-		foreach ($nodesFull as $node) {
-			$typeName = $this->getTypeNameFromParts($node->parts);
-			$ret[$typeName] = $typeName;
-		}
+		//var_dump($staticCalls);
 		
-		$nodes = array_merge($nodes, $nodesFull);
-		
-		$notTypes = $this->getCalledFunctions();	// for some reason these have the namespace
 
-		$notTypes[] = $namespace;
-		$notTypesNoNS = array();
-		$notTypesNoNS = array_merge($notTypesNoNS, self::$phpKeyWords);
-		$notTypesNoNS = array_merge($notTypesNoNS, get_defined_constants());
-		foreach ($notTypesNoNS as $typeNoNS) {
-			$typeName = $namespace . "\\" . $typeNoNS;
-			$notTypes[] = $typeName;
-		}
-
-		$notTypes = array_merge($notTypes, $this->getCalledFunctions());
-
-		foreach($notTypes as $notAType) {
-			
-			if (isset($ret[$notAType])) {
-				unset($ret[$notAType]);
+		foreach ($newStatements as $node) {
+			$class = $node->class;
+			if ($class) {
+				$typeName = $this->getTypeNameFromNode($class, $useAliases, $namespace);
+				if ($typeName) {
+					$ret[$typeName] = $typeName;
+				}
 			}
 		}
 
+		foreach ($methodStatements as $node) {
+			$params = $node->params;
+			if ($params) {
+				foreach ($params as $param) {
+					$type = $param->type;
+					if ($type && !is_string($type)) {	// "array" is treated as a string
+						$parts = $type->parts;
+						if ($parts) {
+							if ($parts[0] == "callable") {
+								continue;
+							}
+						}
+						$typeName = $this->getTypeNameFromNode($type, $useAliases, $namespace);
+						if ($typeName) {
+							$ret[$typeName] = $typeName;
+						}
+					}
+				}
+			}
+		}
+
+		if ($extends != NULL) {
+			$typeName = $this->getTypeNameFromNode($extends, $useAliases, $namespace);
+			if ($typeName) {
+				$ret[$typeName] = $typeName;
+			}
+		}
+
+		if ($implements != NULL) {
+			foreach ($implements as $interface) {
+				$typeName = $this->getTypeNameFromNode($interface, $useAliases, $namespace);
+				if ($typeName) {
+					$ret[$typeName] = $typeName;
+				}
+			}
+		}
+
+		foreach ($staticCalls as $node) {
+			$class = $node->class;
+			if ($class) {
+				$parts = $class->parts;
+				if ($parts) {
+					if ($parts[0] == "parent" || $parts[0] == "self") {
+						continue;
+					}
+				}
+				$typeName = $this->getTypeNameFromNode($class, $useAliases, $namespace);
+				if ($typeName) {
+					$ret[$typeName] = $typeName;
+				}
+			}
+		}
+
+		//var_dump($newStatements);
 		
 
 		return $ret;
+	}
+
+	private function getTypeNameFromNode(\PHPParser_Node_Name $a_node, array $a_useAliases, $a_namespace) {
+		$parts = $a_node->parts;
+		if ($parts) {
+			$typeName = $this->getTypeNameFromParts($parts);
+			if ($a_node->getType() == "Name" && strlen($a_namespace) > 0) {	// not a fully qualified name
+				$typeName = $a_namespace . "\\" . $typeName;
+			}
+			if (isset($a_useAliases[$parts[0]])) {
+				$typeName = $a_useAliases[$parts[0]];
+			}
+			return $typeName;
+		}
+		return NULL;
 	}
 
 	private function containsHTML($a_string) {
@@ -125,34 +189,39 @@ class ClassParser {
 		return false;
 	}
 	
-	private function getCalledFunctions() {
+	/*private function getCalledFunctions($a_namespace, array $a_statements) {
 		$ret = array();
-		$nodes = $this->findNodes("PHPParser_Node_Expr_FuncCall", 
-								  $this->statements);
+		$nodes = $this->findNodes("PHPParser_Node_Expr_FuncCall", $a_statements);
 		foreach ($nodes as $function) {
-			$ret[]= ($function->name->parts[0]);
+			$parts = $function->name->parts;
+			if ($parts) {
+				if (count($parts) > 1) {
+					$ret[] = $this->getTypeNameFromParts($parts);
+				} else {
+					$ret[] = $a_namespace . $this->getTypeNameFromParts($parts);
+				}
+			}
 		}
 		return $ret;
-	}
+	}*/
 	
-	public function getArguments() {
+	/*public function getArguments() {
 		$ret = array();
 		$nodes = $this->findNodes("PHPParser_Node_Param", 
 								  $this->statements);
 		
 		foreach ($nodes as $parameter) {
 			if ($parameter->type != null) {
+
 				$ret[] = ($this->getTypeNameFromParts($parameter->type->parts));
 			}
 		}
 		return $ret;
-	}
+	}*/
 	
 	public function  getNamespace() {
 		
-		$nodes = $this->findNodes("PHPParser_Node_Stmt_Namespace", 
-								  $this->statements);
-		
+		$nodes = $this->findNodes("PHPParser_Node_Stmt_Namespace", $this->statements);
 		
 		if (count($nodes) > 0) {
 			$node = $nodes[0];
@@ -176,20 +245,14 @@ class ClassParser {
 		return $aliases;
 	}
 	
-	public function getClasses() {
+	public function getTypes() {
 		$ret = array();
 		
-		//	print_r($this->statements);
-		
-		
 		$classNodes = $this->findNodes("PHPParser_Node_Stmt_Class", $this->statements);
-		
-		foreach ($classNodes as $node) {
+		$interfaceNodes = $this->findNodes("PHPParser_Node_Stmt_Interface", $this->statements);
+		$types = array_merge($classNodes, $interfaceNodes);
+		foreach ($types as $node) {
 			$ret[] = $node->name;
-		}
-
-		if (count($ret) == 2) {
-			$this->getStatementsInClass("ThisIsAContoller", $this->statements);
 		}
 
 		return $ret;
@@ -199,10 +262,10 @@ class ClassParser {
 	* @param array $parts
 	* @return String
 	*/
-	public function getTypeNameFromParts($parts) {
+	static public function getTypeNameFromParts($parts) {
 		$ret = "";
 		foreach($parts as $part) {
-			if (strlen($ret) > 0 ) {
+			if (strlen($ret) > 0) {
 				$ret .= "\\";
 			}
 			$ret .= "$part";
@@ -218,7 +281,8 @@ class ClassParser {
 	static public function getNamespaceName($a_typeName) {
 		$parts = explode("\\", $a_typeName);
 		if (count($parts) > 1) {
-			return $parts[0];
+			unset($parts[count($parts) - 1]);
+			return ClassParser::getTypeNameFromParts($parts);
 		}
 		return "";
 	}

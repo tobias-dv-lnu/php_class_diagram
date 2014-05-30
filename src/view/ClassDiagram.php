@@ -11,15 +11,25 @@ class ClassDiagram {
 	}
 
 	private function getImageLinkYUML(array $a_classes) {
-		$string = "http://yuml.me/diagram/plain;dir:LR;scale:80;/class/";
+		$baseUrl = "http://yuml.me/diagram/plain;dir:LR;scale:80;/class/";
+		$string = $baseUrl;
+		$imageUrls = array();
 
 		$encodedClassNames = array();
+		$maxCharsInURL = 2000;
 
 		$first = true;
 		foreach($a_classes as $fromClass) {
 			foreach ($fromClass->fanout as $toClass) {
 				$fromFN = $fromClass->getFullName();
-				$toFN = $toClass->getFullName();	
+				//if ($fromClass->namespace == "uiapi") {
+				//	$fromFN = "uiapi";
+				//}
+
+				$toFN = $toClass->getFullName();
+				//if ($toClass->namespace == "uiapi") {
+				//	$toFN = "uiapi";
+				//}	
 
 				$from = $this->yumlClassName($fromFN, "");
 				$to = $this->yumlClassName($toFN , "");
@@ -31,26 +41,49 @@ class ClassDiagram {
 				} else {
 					$string .= ",";
 				}
-				$string .= urlencode("[$from]->[$to]");
+				$newPart = urlencode("[$from]->[$to]");
+				if (strlen($newPart . $string) < $maxCharsInURL) {
+					$string .= $newPart;
+				} else {
+					$imageUrls[] = $string;
+					$string = $baseUrl . $newPart;
+				}
 			}
+		}
+		if (strlen($string) > strlen($baseUrl)) {
+			$imageUrls[] = $string;
 		}
 
 		// add solitary classes last
+		$string = $baseUrl;
 		foreach ($a_classes as $class) {
 			$className = $class->getFullName();
 			if (!isset($encodedClassNames[$className])) {
 
-			if ($first) {
-				$first = false;
-			} else {
-				$string .= ",";
-			}
-
-				$string .= urlencode("[" . $this->yumlClassName($className, "") . "]");
+				if ($first) {
+					$first = false;
+				} else {
+					$string .= ",";
+				}
+				$newPart = urlencode("[" . $this->yumlClassName($className, "") . "]");
+				if (strlen($newPart . $string) < $maxCharsInURL) {
+					$string .= $newPart;
+				} else {
+					$imageUrls[] = $string;
+					$string = $baseUrl . $newPart;
+				}
 			}
 		}
+		if (strlen($string) > strlen($baseUrl)) {
+			$imageUrls[] = $string;
+		}
 
-		return "<img src='$string'/>";
+		$string = "";
+		foreach ($imageUrls as $url) {
+			$string .= "<img src='$url'/>";
+		}
+
+		return $string;
 	}
 
 

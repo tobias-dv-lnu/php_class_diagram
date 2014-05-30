@@ -7,8 +7,8 @@ require_once("view/ClassMatrix.php");
 require_once("view/ClassClassification.php");
 
 $source = new \model\Folder($_GET["basepath"]);
-$parser = new \model\ProjectParser($source);
-$classes = $parser->getClasses();
+$parser = new \model\ProjectParser();
+$classes = $parser->getClasses($source);
 
 $p = new \model\Project($source, $classes);
 

@@ -9,6 +9,8 @@ class ClassClassification {
 		
 		
 		$classes = $a_project->getClasses();
+
+		//var_dump($classes);
 		
 		echo "<table border='1'>";
 		echo "<tr><th>Class</th><th>Rule Classification</th><th>Developer Classification</th></tr>";
@@ -18,31 +20,44 @@ class ClassClassification {
 				$row = "<td>" . $class->namespace . "-" . $class->className."</td><td>";
 				$depth = $class->DepthOfIsUsingNamespace("uiapi");
 				$rc = "model";
-				if ($depth <= 0) {
+				if ($depth == 0) {
+					$row .= "uiapi ";
+					$rc = "uiapi";
+				} else if ($depth < 0) {
 					$row .= "model ";
 				} else if ($depth > 1) {
 					$row .= "controller ";
 					$rc = "controller";
-				} else if ($depth == 1) {
+				} else {
 					$row .= "view ";
 					$rc = "view";
 				}
 
 				$row .= "</td><td>";
 				$typeName = strtoupper($class->getFullName());
+				$fileName = strtoupper($class->fileName);
 				$dc = "view";
-				if (strstr($typeName, "VIEW")) {
+				if ($rc == "uiapi") {
+					$dc = "uiapi";
+					$row .= "uiapi";
+				} else if (strstr($typeName, "VIEW") || strstr($fileName, "VIEW")) {
 					$row .= "view";
-				} else if (strstr($typeName, "MODEL")) {
+				} else if (strstr($typeName, "MODEL") || strstr($fileName, "MODEL")) {
 					$row .= "model";
 					$dc = "model";
-				} else {
+				} else if (	strstr($typeName, "CONTROL") || strstr($fileName, "CONTROL") ||
+							strstr($typeName, "CTRL") || strstr($fileName, "CTRL")){
 					$row .= "controller";
 					$dc = "controller";
+				} else {
+					$rc = "uiapi";
+					$row .= "n/a";
 				}
 				$row .="</td>";
 
-				if ($rc == $dc) {
+				if ($rc == "uiapi") {
+					echo "<tr bgcolor='white'>";
+				} else if ($rc == $dc) {
 					echo "<tr bgcolor='lightgreen'>";
 				} else {
 					echo "<tr bgcolor='red'>";
