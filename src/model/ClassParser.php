@@ -38,7 +38,7 @@ class ClassParser {
 		}
 
 		$variableStatements = $this->findNodes("PHPParser_Node_Expr_Variable", $statements);
-		$viewArrays = array("_GET", "_POST", "_REQUEST", "_FILES");
+		$viewArrays = array("_GET", "_POST", "_REQUEST", "_FILES", "_SERVER");
 
 		foreach ($variableStatements as $variable) {
 			foreach ($viewArrays as $key => $value) {
@@ -55,11 +55,21 @@ class ClassParser {
 		$viewFunctions = array("header", "get_headers", "parse_url", "urldecode", "urlencode", "rawurldecode", "rawurlencode", "http_build_query");
 		foreach ($functionStatements as $function) {
 			foreach ($viewFunctions as $key => $value) {
-				if (strpos($function->name, $value) !== FALSE) {
-					$value = "uiapi\\" . $value;
-					$ret[$value] = $value;
-					unset($viewFunctions[$key]);
-					break;
+				$name = $function->name;
+				if ($name->getType() == "Name") {
+					if (strpos($name, $value) !== FALSE) {
+						$value = "uiapi\\" . $value;
+						$ret[$value] = $value;
+						unset($viewFunctions[$key]);
+						break;
+					}
+				} else {
+					// this is the situation where whe a callable argument is used
+					// like:
+					//	function DoFunction(callable $a_function) {
+					//		$a_function(...);
+					//	}
+					// should not strategy pattern be used here instead?
 				}
 			}
 		}		
@@ -161,8 +171,17 @@ class ClassParser {
 	}
 
 	private function containsHTML($a_string) {
+
+		$string = preg_replace ('/<[^>]*>/', '', $a_string);
+
+		//echo $a_string . " " . $string . "<br>";
+
 		// this is not perfect and will catch opening "<"
-		return strlen($a_string) != strlen(strip_tags($a_string));
+		if (strlen($a_string) != strlen($string)) {
+				// check for both < and >
+			return true;
+		}
+		return false;
 	}
 
 	private function dependsOnHTML(array $a_statements) {

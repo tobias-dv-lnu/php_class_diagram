@@ -13,11 +13,11 @@ class ClassClassification {
 		//var_dump($classes);
 		
 		echo "<table border='1'>";
-		echo "<tr><th>Class</th><th>Rule Classification</th><th>Developer Classification</th></tr>";
+		echo "<tr><th>File</th><th>Namespace</th><th>Class</th><th>Rule Classification</th><th>Developer Classification</th></tr>";
 		foreach ($classes as $class) {
 
 			if (isset($class->fileName)) {
-				$row = "<td>" . $class->namespace . "-" . $class->className."</td><td>";
+				$row = "<td>" .$class->fileName . "</td><td>" . $class->namespace . "</td><td>" . $class->className."</td><td>";
 				$depth = $class->DepthOfIsUsingNamespace("uiapi");
 				$rc = "model";
 				if ($depth == 0) {

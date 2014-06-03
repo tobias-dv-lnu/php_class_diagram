@@ -12,6 +12,6 @@ $classes = $parser->getClasses($source);
 
 $p = new \model\Project($source, $classes);
 
-new \view\ClassDiagram($p);
-new \view\ClassMatrix($p);
+//new \view\ClassDiagram($p);
+//new \view\ClassMatrix($p);
 new \view\ClassClassification($p);

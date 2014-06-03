@@ -26,6 +26,7 @@ class ProjectParser {
 				$namespace = $classParser->getNamespace();
 				
 				$classes = $classParser->getTypes();
+				//echo $a_file->getFullName();
 
 				foreach($classes as $class) {
 
