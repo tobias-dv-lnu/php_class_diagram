@@ -52,7 +52,7 @@ class ClassParser {
 		}
 
 		$functionStatements = $this->findNodes("PHPParser_Node_Expr_FuncCall", $statements);
-		$viewFunctions = array("header", "get_headers", "parse_url", "urldecode", "urlencode", "rawurldecode", "rawurlencode", "http_build_query");
+		$viewFunctions = array("header", "get_headers", "parse_url", "urldecode", "urlencode", "rawurldecode", "rawurlencode", "http_build_query", "setcookie");
 		foreach ($functionStatements as $function) {
 			foreach ($viewFunctions as $key => $value) {
 				$name = $function->name;
