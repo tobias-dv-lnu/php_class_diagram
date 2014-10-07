@@ -77,16 +77,26 @@ if ($data) {
 
 	}
 
-//	echo $commandline . PHP_EOL;
+	//echo $commandline . PHP_EOL;
 	echo shell_exec($commandline);
 
   // Do the analysis
   if(file_exists($LOCAL_REPO . "/.git")) {
   	// we have something
-  	$repoPath = "c://hObbE/webbdev/root/rulzor/gitit/" . $LOCAL_REPO;
+  	//$repoPath = "c://hObbE/webbdev/root/rulzor/gitit/" . $LOCAL_REPO;
+  	$repoPath = getcwd() . "/" . $LOCAL_REPO;
   	require_once("logfile.php");
   	require_once("gitapi.php");
-  	$log = new LogFile($repoPath . "/rulzorAnalysis.log");
+  	$version = "First Pull";
+  	if (isset($data->after)) {
+  		$version = $data->after;
+  	}
+  	$log = new LogFile($repoPath . "/rulzorAnalysis.log", $version);
+
+  	if (!isset($data->repository->owner->name)) {
+  		// the payload seems to have changed...
+  		$data->repository->owner->name = $data->repository->owner->login; 
+  	}
 
   	chdir("../src");
   	require_once("model/Folder.php");
@@ -164,9 +174,9 @@ if ($data) {
 
 			$log->Log($class->getFullName() . " in file: " . $class->fileName . " dc: " . $dc .  " rc: " . $rc .  " issue: " . $currentIssue);
 			
-			if ($currentIssue == "mismatch") {
+			if ($currentIssue == "mismatch" || $currentIssue == "rc n/a" || $currentIssue == "dc n/a") {
 
-				$problemText = "You have a potential problem in file: " . $data->repository->url . "/blob/master" . substr($class->fileName, strlen($repoPath)) . PHP_EOL;
+				$problemText = "You have a potential problem in file: " . $data->repository->html_url . "/blob/master" . substr($class->fileName, strlen($repoPath)) . PHP_EOL;
 				$problemText .= "You say the class is a: " . $dc . PHP_EOL;
 				$problemText .= "But it looks like a: " . $rc . PHP_EOL . PHP_EOL;
 				if ($rc == "n/a" || $dc == "n/a") {
@@ -279,7 +289,6 @@ if ($data) {
 	// save the issues
 	file_put_contents($issuesFile, json_encode($oldIssues));
   } else {
-  	$log->Log("Something went wrong no files cloned...");
   	echo "Something went wrong no files cloned..." . PHP_EOL;
   }
 
