@@ -88,7 +88,7 @@ class ClassParser {
 
 		foreach ($newStatements as $node) {
 			$class = $node->class;
-			if ($class) {
+			if ($class && get_class($class) == "PHPParser_Node_Name") {
 				$typeName = $this->getTypeNameFromNode($class, $useAliases, $namespace);
 				if ($typeName) {
 					$ret[$typeName] = $typeName;
