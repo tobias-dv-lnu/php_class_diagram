@@ -9,27 +9,18 @@
 //	performance large amount of code (added two of the largest old project repos to the same test, no performance problems)
 //	performance many users
 
+require_once("onpush_functions.php");
 $request_body = file_get_contents('php://input');
-$data = json_decode($request_body);
+$data = ReadPushToMasterFromInput();
 
-$secret = 'TheTruthIsOutThere';	// Possibly bad to have this here
- 
-$headers = getallheaders();
-$hubSignature = $headers['X-Hub-Signature'];
- 
-list($algo, $hash) = explode('=', $hubSignature, 2);
- 
-$payloadHash = hash_hmac($algo, $request_body, $secret);
- 
-if ($hash !== $payloadHash) {
-	// we have a bad secret
-	// possibly log this
-    die("");
-}
- 
+set_time_limit(60);
 
 if ($data) {
+	echo "Test"; 
+
 	$commandline = "";
+
+	echo "Test";
 
 	$LOCAL_REPO_NAME = $data->repository->full_name;
 	$LOCAL_REPO_NAME = str_replace("/", "\\", $data->repository->full_name);	// mkdir cannot use /
@@ -37,8 +28,6 @@ if ($data) {
 
 	$LOCAL_ROOT         = "repo";
 	$LOCAL_REPO         = "{$LOCAL_ROOT}/{$LOCAL_REPO_NAME}";
-	$REMOTE_REPO        = "https://github.com/{$data->repository->full_name}";
-	$BRANCH             = "master";
 
 	// check that this is a push to the master branch?
 	// when the hook is created the first payload is a bit special (not a push)
@@ -46,36 +35,11 @@ if ($data) {
 		echo "Push to branch: " . $data->ref . PHP_EOL;
 		echo "Ignoring..." . PHP_EOL;
 		die("");
-
 	}
-
 
 	$creds = "https://Rulzor:Gragullesgrand12@";	// avoid ÅÄÖ in username password
 	$repo = str_replace("https://", $creds, $data->repository->clone_url);
-	if(file_exists($LOCAL_REPO)) {
-		if (file_exists($LOCAL_REPO . "/.git")) {
-	  		echo ("Local Repo Exists. Pulling..." . PHP_EOL);
-		    $commandline = "cd " . escapeshellarg($LOCAL_REPO) . " && git pull";
-		} else {
-			echo ("Local Folders Exists but no repo. Cloning..." . PHP_EOL);
-			
-			$commandline =	"cd " . escapeshellarg($LOCAL_REPO) . " && " . 
-							"cd .. && git clone " . escapeshellarg($repo);
-		}
-
-	} else {
-		echo ("No Local Repo. Cloning..." . PHP_EOL);
-
-		$commandline =	"cd " . escapeshellarg($LOCAL_ROOT) . " && " . 
-						"mkdir " . escapeshellarg($LOCAL_REPO_NAME) . " && " . 
-						"cd " . escapeshellarg($LOCAL_REPO_NAME) ." && " .
-						"cd .. && git clone " . escapeshellarg($repo);
-
-	//$commandline = "cd {$LOCAL_ROOT} && mkdir {$LOCAL_REPO_NAME} && cd {$LOCAL_REPO_NAME} && cd .. && git clone {$repo}";
-
-	//$commandline = "cd {$LOCAL_ROOT} && mkdir {$LOCAL_REPO_NAME} && cd {$LOCAL_REPO_NAME} && cd .. && mkdir dret && git clone {$repo}";
-
-	}
+	$commandline = GetGitCommandLine($LOCAL_ROOT, $LOCAL_REPO_NAME, $repo);
 
 	//echo $commandline . PHP_EOL;
 	echo shell_exec($commandline);
@@ -136,74 +100,19 @@ if ($data) {
 			}
 
 			// find developer classification
-			$typeName = strtoupper($class->getFullName());
-			$fileName = strtoupper($class->fileName);
-			$dc = "n/a";
-			if (strstr($typeName, "VIEW") || strstr($fileName, "VIEW")) {
-				$dc = "view";
-			} else if (strstr($typeName, "MODEL") || strstr($fileName, "MODEL")) {
-				$dc = "model";
-			} else if (strstr($typeName, "CONTROL") || strstr($fileName, "CONTROL") ||
-				strstr($typeName, "CTRL") || strstr($fileName, "CTRL")) {
-				$dc = "controller";
-			}
+			$dc = GetDeveloperClassification(strtoupper($class->getNamespace()), strtoupper($class->getName()),strtoupper($class->fileName));
 
 			// perform rule classification
-			$depth = $class->DepthOfIsUsingNamespace("uiapi");
-			$rc = "n/a";
-			if ($depth == 0 || $depth == 1) {
-				$rc = "view";
-			} else if ($depth < 0) {
-				$rc = "model";
-			} else if ($depth > 1) {
-				$rc = "controller";
-			}
+			$rc = GetRuleClassification($class->DepthOfIsUsingNamespace("uiapi"));
+			
 
-			$currentIssue = "unset";
-			if ($dc == "n/a") {
-				// could not perform dev. classification bad naming?
-				$currentIssue = "dc n/a";
-			} else if ($rc == "n/a") {
-				// could not perform rule classification, should never happen?
-				$currentIssue = "rc n/a";
-			} else if ($rc != $dc) {
-				$currentIssue = "mismatch";
-			} else if ($rc == $dc) {
-				$currentIssue = "none";
-			}
+			$currentIssue = GetIssueString($dc, $rc);
 
 			$log->Log($class->getFullName() . " in file: " . $class->fileName . " dc: " . $dc .  " rc: " . $rc .  " issue: " . $currentIssue);
 			
 			if ($currentIssue == "mismatch" || $currentIssue == "rc n/a" || $currentIssue == "dc n/a") {
 
-				$problemText = "You have a potential problem in file: " . $data->repository->html_url . "/blob/master" . substr($class->fileName, strlen($repoPath)) . PHP_EOL;
-				$problemText .= "You say the class is a: " . $dc . PHP_EOL;
-				$problemText .= "But it looks like a: " . $rc . PHP_EOL . PHP_EOL;
-				if ($rc == "n/a" || $dc == "n/a") {
-					$problemText .= "(n/a means that you either have named the class/namespace/file/path in a way that makes it hard to know what you mean (use view, model, controller) or that the analysis of the class was inconclusive in some way.)" . PHP_EOL . PHP_EOL;
-				}
-
-				if ($rc == 'model') {
-					if ($dc == 'view') {
-						$problemText .= "You probably do not have any direct view responsibility in this class.";
-					} else if ($dc == 'controller') {
-						$problemText .= "You probably do not generate any output using a view in your controller.";
-					}
-
-				} else if ($rc == 'view') {
-					if ($dc == 'model') {
-						$problemText .= "You probably have view responsibilty in your model class. For example generating HTML or use of some function in php that is specific for HTTP.";
-					} else if ($dc == 'controller') {
-						$problemText .= "You probably have view responsibilty in your controller class. For example generating HTML or use of some function in php that is specific for HTTP";						
-					}
-
-				} else if ($rc == 'controller') {
-					if ($dc == 'view') {
-						$problemText .= "You probably do not have any direct view responsibility in this class.";
-					} else if ($dc == 'model') {
-						$problemText .= "You probably use a class that has direct view responsibility.";
-					}
-				}
+				$problemText = GetProblemString($dc, $rc, $data->repository->html_url . "/blob/master" . substr($class->fileName, strlen($repoPath)));
 
 				// ignore, reopen or create an issue
 				if (isset($oldIssues[$issueKey]) && $oldIssues[$issueKey]["number"] >= 0) {

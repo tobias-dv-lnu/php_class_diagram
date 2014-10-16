@@ -88,6 +88,13 @@ class ClassParser {
 
 		foreach ($newStatements as $node) {
 			$class = $node->class;
+
+			/*/
+			need to check the type because you can do funky stuff like:
+			public static function load($object){
+	    	 return = new $object(); // this will result in a variable_node and we cannot easily know what type is used
+			}
+			*/
 			if ($class && get_class($class) == "PHPParser_Node_Name") {
 				$typeName = $this->getTypeNameFromNode($class, $useAliases, $namespace);
 				if ($typeName) {

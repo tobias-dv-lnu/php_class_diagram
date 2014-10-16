@@ -38,6 +38,14 @@ class ClassNode {
 		$this->fanout = $fanout;
 	}
 
+	public function getNamespace() {
+		return $this->namespace;
+	}
+
+	public function getName() {
+		return $this->className;
+	}
+
 	public function getFullName() {
 		if ($this->namespace != "")
 			return $this->namespace . "\\" . $this->className;
