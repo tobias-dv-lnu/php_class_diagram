@@ -33,6 +33,9 @@ function PerformAnalysis($data, $a_doAllowPull) {
 		$repo = str_replace("https://", $creds, $data->repository->clone_url);
 		$commandline = GetGitCommandLine($LOCAL_ROOT, $LOCAL_REPO_NAME, $repo, $a_doAllowPull);
 
+		if(strlen($commandline) <= 0) {
+			return;
+		}
 		//echo $commandline . PHP_EOL;
 		echo shell_exec($commandline);
 
@@ -137,7 +140,6 @@ function ReadPushToMasterFromInput() {
 
 // returns the git commandline string
 function GetGitCommandLine($a_localRepoRootDir, $a_localRepoPath, $a_fullRemoteURL, $a_allowPull) {
-	echo "Test";
 	$localRepoFullPath = $a_localRepoRootDir . "/" . $a_localRepoPath;
 
 
