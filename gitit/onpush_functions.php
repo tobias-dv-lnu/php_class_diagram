@@ -104,7 +104,7 @@ function PerformAnalysis($data, $a_doAllowPull) {
 		$issueTracker->Save();
 		//file_put_contents($issuesFile, json_encode($oldIssues));
 	  } else {
-	  	echo "Something went wrong no files cloned..." . PHP_EOL;
+	  	echo "Error! Something went wrong no files cloned..." . PHP_EOL;
 	  }
 	}
 }
@@ -119,6 +119,9 @@ function ReadPushToMasterFromInput() {
 	$secret = 'TheTruthIsOutThere';	// Possibly bad to have this here
  
 	$headers = getallheaders();
+	if (!isset($headers['X-Hub-Signature'])) {
+		return NULL;
+	}
 	$hubSignature = $headers['X-Hub-Signature'];
  
 	list($algo, $hash) = explode('=', $hubSignature, 2);
@@ -183,12 +186,7 @@ function GetDeveloperClassificationString($a_str) {
 
 function GetDeveloperClassification($a_namespace, $a_typeName, $a_fileName) {
 	// find developer classification
-	// first check the namespace, then the path, then the typename
-	/*$typeName =  $a_typeName;
-	if($a_namespace != "") {
-		$typeName = $a_namespace . "\\" . $a_typeName;	
-	}*/
-	
+	// first check the namespace, then the path, then the typename	
 	$dc = "n/a";
 	$dc = GetDeveloperClassificationString($a_namespace);
 	if ($dc == "n/a") {
@@ -199,17 +197,6 @@ function GetDeveloperClassification($a_namespace, $a_typeName, $a_fileName) {
 	}
 
 	return $dc;
-
-	/*if (strstr($typeName, "VIEW") || strstr($a_fileName, "VIEW")) {
-		$dc = "view";
-	} else if (strstr($typeName, "MODEL") || strstr($a_fileName, "MODEL")) {
-		$dc = "model";
-	} else if (strstr($typeName, "CONTROL") || strstr($a_fileName, "CONTROL") ||
-		strstr($typeName, "CTRL") || strstr($a_fileName, "CTRL")) {
-		$dc = "controller";
-	}
-
-	return $dc;*/
 }
 
 function GetRuleClassification($a_depth) {

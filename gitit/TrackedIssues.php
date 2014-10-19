@@ -41,14 +41,14 @@ class TrackedIssues {
 					}
 
 					if (!$wontfix) {
-						$this->SetIssue($gitIssueId, $a_problemText, true, "Reopened Issue on GitHub: ", "Could Not Reopen Issue on GitHub: ");
+						$this->SetIssue($gitIssueId, $a_problemText, true, "Reopened Issue on GitHub: ", "Error! Could Not Reopen Issue on GitHub: ");
 					}
 				} else if ($issue->body != $a_problemText) {
 					// issue has changed to post a new body
-					$this->SetIssue($gitIssueId, $a_problemText, true, "Set Issue Body on GitHub: ", "Could Not Set Issue Body on GitHub: ");
+					$this->SetIssue($gitIssueId, $a_problemText, true, "Set Issue Body on GitHub: ", "Error! Could Not Set Issue Body on GitHub: ");
 				}
 			} else {
-				$this->m_log->Log("Could Not Find Issue on GitHub: " . $this->m_git->GetLastUrl());
+				$this->m_log->Log("Error! Could Not Find Issue on GitHub: " . $this->m_git->GetLastUrl());
 				$this->m_log->Log("Response fromg GitHub:" . $result);
 			}
 		} else {
@@ -59,7 +59,7 @@ class TrackedIssues {
 				$this->m_log->Log("Created Issue on GitHub: " . $this->m_git->GetLastUrl());
 				$this->m_issues[$a_issueKey] = $issue;	
 			} else {
-				$this->m_log->Log("Could Not Create Issue on GitHub: " . $this->m_git->GetLastUrl());
+				$this->m_log->Log("Error! Could Not Create Issue on GitHub: " . $this->m_git->GetLastUrl());
 				$this->m_log->Log("Response fromg GitHub:" . $result);
 			}
 		}
@@ -72,11 +72,11 @@ class TrackedIssues {
 			if (isset($issue->number)) {
 				if ($issue->state == "open") {
 					// close the issue
-					$this->SetIssue($issue->number, "", false, "Closed Issue on GitHub: ", "Could Not Close Issue on GitHub: ");
+					$this->SetIssue($issue->number, "", false, "Closed Issue on GitHub: ", "Error! Could Not Close Issue on GitHub: ");
 
 				}
 			} else {
-				$this->m_log->Log("Could Not Find Issue on GitHub: " . $this->m_git->GetLastUrl());
+				$this->m_log->Log("Error! Could Not Find Issue on GitHub: " . $this->m_git->GetLastUrl());
 				$this->m_log->Log("Response fromg GitHub:" . $result);
 			}
 		}
