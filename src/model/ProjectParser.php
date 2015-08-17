@@ -19,7 +19,7 @@ class ProjectParser {
 	}
 	
 	public function getClasses($a_file) {
-			
+		//echo $a_file->getFullName();
 		if ($a_file->isDirectory() == false ) {
 			try {
 				$classParser = new ClassParser($a_file->getCode());
@@ -29,11 +29,12 @@ class ProjectParser {
 				//echo $a_file->getFullName();
 
 				foreach($classes as $class) {
-
+					//print_r($class);
 					// possibly we should check if a class is already parsed
 					// this could avoid duplicate class declarations
 
 					$fanout = $classParser->getDependencies($class);
+
 					$fanoutClasses = array();
 					foreach ($fanout as $typeName) {
 						$fanOutClass = $this->FindClass($typeName);
@@ -46,6 +47,7 @@ class ProjectParser {
 						}
 						$fanoutClasses[] = $fanOutClass;
 					}
+					//echo (": got Dependencies<br>");
 				
 					$typeName = $classParser->getTypeNameFromParts(array($namespace, $class));
 					$newClass = $this->FindClass($typeName);
@@ -58,7 +60,13 @@ class ProjectParser {
 					$newClass->fileName = $a_file->getFullName();
 				}
 			}catch(\Exception $e) {
+				echo "Exception when handling file: " . $a_file->getFullName() . " :<br>";
+				echo $e;
+				echo "<br>Will continue with next file...<br><br>";
+				//throw $e;
 			}
+
+			//echo "All Done!";
 			
 		} else {
 			$files = $a_file->getFiles();
@@ -66,6 +74,7 @@ class ProjectParser {
 				$this->getClasses($file);
 			}
 		}
+
 
 		return $this->m_classes;
 	}

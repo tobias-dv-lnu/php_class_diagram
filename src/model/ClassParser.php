@@ -17,6 +17,7 @@ class ClassParser {
 			  $this->statements = $parser->parse($code);
 			 // var_dump($this->statements);
 		} catch (\PHPParser_Error $e) {
+			//print_r($code);
 			throw new \Exception('Parse Error: '. $e->getMessage());
 		}
 	}
@@ -41,13 +42,19 @@ class ClassParser {
 		$viewArrays = array("_GET", "_POST", "_REQUEST", "_FILES", "_SERVER");
 
 		foreach ($variableStatements as $variable) {
-			foreach ($viewArrays as $key => $value) {
-				if (strpos($variable->name, $value) !== FALSE) {
-					$value = "uiapi\\" . $value;
-					$ret[$value] = $value;
-					unset($viewArrays[$key]);
-					break;
+			if (is_string($variable->name)) {
+				foreach ($viewArrays as $key => $value) {
+					if (strpos($variable->name, $value) !== FALSE) {
+						$value = "uiapi\\" . $value;
+						$ret[$value] = $value;
+						unset($viewArrays[$key]);
+						break;
+					}
 				}
+			} else {
+				var_dump($a_className);
+				var_dump($variable->name);
+				exit();
 			}
 		}
 

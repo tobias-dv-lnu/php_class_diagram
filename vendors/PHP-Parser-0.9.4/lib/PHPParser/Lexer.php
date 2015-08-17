@@ -22,6 +22,15 @@ class PHPParser_Lexer
         $this->dropTokens = array_fill_keys(array(T_WHITESPACE, T_OPEN_TAG), 1);
     }
 
+    private function return_bytes ($size_str) {
+        switch (substr ($size_str, -1)) {
+            case 'M': case 'm': return (int)$size_str * 1048576;
+            case 'K': case 'k': return (int)$size_str * 1024;
+            case 'G': case 'g': return (int)$size_str * 1073741824;
+            default: return $size_str;
+        }
+    }
+
     /**
      * Initializes the lexer for lexing the provided source code.
      *
@@ -30,8 +39,18 @@ class PHPParser_Lexer
      * @throws PHPParser_Error on lexing errors (unterminated comment or unexpected character)
      */
     public function startLexing($code) {
+        // if a really big file is about to be lexed we need to check
+        // for memory as this is a fatal exeption in token_get_all()
+        // *4 is just a guesstimation
+        $freemem = $this->return_bytes(ini_get('memory_limit')) - memory_get_usage();
+        if (4 * strlen($code) > $freemem) {
+            //echo "" . strlen($code) .">". $freemem . "<br>";
+            //echo strlen($code) > $freemem ? ini_get('memory_limit') :  "mem fine";
+            //exit();
+            throw new PHPParser_Error('Likely to run out of memory parsing code of size: ' . strlen($code) . " You could try to increase the mem limit in php.ini"); 
+        }
         $this->resetErrors();
-        $this->tokens = @token_get_all($code);
+        $this->tokens = token_get_all($code);
         $this->handleErrors();
 
         $this->code = $code; // keep the code around for __halt_compiler() handling
